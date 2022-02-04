@@ -231,7 +231,7 @@ export const createProperty = (
 export const createParameter = (
     factory: NodeFactory,
     name: string | Identifier,
-    type: TypeNode,
+    type: TypeNode | TypeElement,
     {
         default: initializer,
         optional = false,
@@ -244,7 +244,7 @@ export const createParameter = (
         rest ? factory.createToken(ts.SyntaxKind.DotDotDotToken) : undefined,
         name,
         optional ? factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
-        type,
+        ts.isTypeElement(type) ? factory.createTypeLiteralNode([type]) : type,
         initializer
     );
 };

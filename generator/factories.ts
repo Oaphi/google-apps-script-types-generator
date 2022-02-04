@@ -156,3 +156,24 @@ export const createEnum = (
         members
     );
 };
+
+/**
+ * @param factory compiler factory to use
+ * @param name identifier to create the enum member with
+ * @param initializer optional member initializer
+ */
+export const createEnumMember = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    initializer?: string | number
+) => {
+    if (initializer === void 0) {
+        return factory.createEnumMember(name);
+    }
+
+    const literal = typeof initializer === "string" ?
+        factory.createStringLiteral(initializer) :
+        factory.createNumericLiteral(initializer);
+
+    return factory.createEnumMember(name, literal);
+};

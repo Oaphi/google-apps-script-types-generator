@@ -249,3 +249,18 @@ export const createEnumMember = (
 
     return factory.createEnumMember(name, literal);
 };
+
+/**
+ * @summary creates a {@link ts.TypeQueryNode}
+ * @param factory compiler factory to use
+ * @param name {@link ts.Identifier} of the type query
+ */
+export const createTypeQuery = (
+    factory: NodeFactory,
+    name: string | Identifier,
+) => {
+    return factory.createTypeQueryNode(
+        typeof name !== "string" ? name :
+            factory.createIdentifier(name)
+    );
+};

@@ -1,5 +1,6 @@
+import type { Statement } from "typescript";
 import { prependMultilineComment } from "./decorators.js";
-import { createInterface, createNamespace } from "./factories.js";
+import { createEnum, createInterface, createNamespace } from "./factories.js";
 import { getDocument } from "./utils/request.js";
 import { extractLinks, extractText } from "./utils/selector.js";
 import { sleep } from "./utils/timing.js";
@@ -57,23 +58,26 @@ for (const servicePath of servicePaths) {
 
     const serviceClassRows = serviceDoc.querySelectorAll<HTMLTableRowElement>(serviceClassRowsSelector);
 
-    const serviceClassSchemas: Array<{ desc: string, path: string, name: string; }> = [];
+    const serviceMemberDeclarations: Map<string, Statement> = new Map();
     serviceClassRows.forEach((row) => {
         const name = extractText(serviceClassNameSelector, row);
         const desc = extractText(serviceClassDescSelector, row);
         const [path] = extractLinks(`${serviceClassNameSelector} a`, row);
-        serviceClassSchemas.push({ desc, name, path });
-    });
+        const isEnum = /^An?\s+enum/i.test(desc);
 
-    const serviceClassDeclarations = serviceClassSchemas.map(({ name, desc }) => {
-        const serviceClassDeclaration = createInterface(factory, name, []);
-        return prependMultilineComment(serviceClassDeclaration, desc);
+        const memberFactory = isEnum ? createEnum : createInterface;
+
+        const declaration = memberFactory(factory, name, []);
+
+        prependMultilineComment(declaration, desc);
+
+        serviceMemberDeclarations.set(path, declaration);
     });
 
     const serviceNSdeclaration = createNamespace(
         factory,
         serviceName,
-        serviceClassDeclarations
+        [...serviceMemberDeclarations.values()]
     );
 
     // add service description as a leading multiline JSDoc comment

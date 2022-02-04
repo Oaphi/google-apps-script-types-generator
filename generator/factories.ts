@@ -64,10 +64,10 @@ export const createArray = (
 };
 
 /**
- * @summary creates a module declaration
- * @param factory compiler factory to use
- * @param name identifier to create the module with
- * @param statements statements to make up the body
+ * @summary creates a {@link ts.ModuleDeclaration}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param name {@link ts.Identifier} of the module
+ * @param statements {@link ts.Statement}s to include
  * @param options factory configuration
  */
 export const createModuleDeclaration = (
@@ -184,8 +184,8 @@ export const updateInterfaceMembers = (
 
 /**
  * @summary creates a {@link ts.PropertySignature}
- * @param factory compiler factory to use
- * @param name identifier to create the member with
+ * @param factory {@link ts.NodeFactory} to use
+ * @param name {@link ts.Identifier} of the member
  * @param type member type
  * @param options factory configuration
  */

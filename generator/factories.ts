@@ -361,3 +361,32 @@ export const createTypeQuery = (
             factory.createIdentifier(name)
     );
 };
+
+/**
+ * @summary creates an {@link ts.IndexSignatureDeclaration}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param parameterName {@link ts.Identifier} of the signature
+ * @param signatureType signature type
+ */
+export const createIndexSignature = (
+    factory: NodeFactory,
+    parameterName: string | Identifier,
+    parameterType: TypeNode,
+    signatureType: TypeNode,
+) => {
+    const parameter = factory.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        parameterName,
+        undefined,
+        parameterType
+    );
+
+    return factory.createIndexSignature(
+        undefined,
+        undefined,
+        [parameter],
+        signatureType
+    );
+};

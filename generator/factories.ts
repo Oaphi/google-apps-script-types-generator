@@ -1,12 +1,14 @@
 import type {
     EnumDeclaration,
     EnumMember,
+    Expression,
     HeritageClause,
     Identifier,
     InterfaceDeclaration,
     Modifier,
     NodeFactory,
     NodeFlags,
+    ParameterDeclaration,
     Statement,
     TypeElement,
     TypeNode,
@@ -29,12 +31,23 @@ export type NamespaceOptions = CommonDeclarationOptions & {};
 
 export type InterfaceOptions = CommonDeclarationOptions & {
     inherits?: HeritageClause[];
-    parameters?: TypeParameterDeclaration[];
+    typeParameters?: TypeParameterDeclaration[];
 };
 
 export type InterfaceMemberOptions = {
     optional?: boolean;
-}
+};
+
+export type ParameterOptions = {
+    default?: Expression;
+    optional?: boolean;
+    rest?: boolean;
+};
+
+export type InterfaceMethodOptions = InterfaceMemberOptions & {
+    typeParameters?: TypeParameterDeclaration[];
+    parameters?: ParameterDeclaration[];
+};
 
 export type EnumOptions = CommonDeclarationOptions & {};
 
@@ -116,7 +129,7 @@ export const createInterface = (
         exported = false,
         isAmbient = false,
         inherits = [],
-        parameters = [],
+        typeParameters = [],
     }: InterfaceOptions = {}
 ) => {
     const modifiers: Modifier[] = [];
@@ -129,7 +142,7 @@ export const createInterface = (
         undefined,
         modifiers,
         name,
-        parameters,
+        typeParameters,
         inherits,
         members
     );
@@ -177,6 +190,61 @@ export const createProperty = (
         name,
         optional ? factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
         type
+    );
+};
+
+/**
+ * @summary creates a {@link ts.ParameterDeclaration}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param name {@link ts.Identifier} of the parameter
+ * @param type parameter type
+ * @param options factory configuration
+ */
+export const createParameter = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    type: TypeNode,
+    {
+        default: initializer,
+        optional = false,
+        rest = false
+    }: ParameterOptions = {}
+) => {
+    return factory.createParameterDeclaration(
+        undefined,
+        undefined,
+        rest ? factory.createToken(ts.SyntaxKind.DotDotDotToken) : undefined,
+        name,
+        optional ? factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
+        type,
+        initializer
+    );
+};
+
+/**
+ * @summary creates a {@link ts.MethodSignature}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param name {@link ts.Identifier} of the method
+ * @param returnType return type of the method
+ * @param options factory configuration
+ */
+export const createMethod = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    returnType: TypeNode,
+    {
+        optional = false,
+        parameters = [],
+        typeParameters = []
+    }: InterfaceMethodOptions = {}
+) => {
+    return factory.createMethodSignature(
+        undefined,
+        name,
+        optional ? factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
+        typeParameters,
+        parameters,
+        returnType
     );
 };
 

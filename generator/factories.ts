@@ -1,4 +1,5 @@
 import type {
+    EnumDeclaration,
     EnumMember,
     HeritageClause,
     Identifier,
@@ -204,6 +205,26 @@ export const createEnum = (
         undefined,
         modifiers,
         name,
+        members
+    );
+};
+
+/**
+ * @summary updates members of an {@link ts.EnumDeclaration}
+ * @param factory compiler {@link ts.NodeFactory} to use
+ * @param node {@link ts.EnumDeclaration} to update
+ * @param members list of new {@link ts.EnumMembers}
+ */
+export const updateEnumMembers = (
+    factory: NodeFactory,
+    node: EnumDeclaration,
+    members: EnumMember[]
+) => {
+    return factory.updateEnumDeclaration(
+        node,
+        node.decorators,
+        node.modifiers,
+        node.name,
         members
     );
 };

@@ -1,6 +1,6 @@
 import type { Statement } from "typescript";
 import { prependMultilineComment } from "./decorators.js";
-import { createEnum, createEnumMember, createInterface, createNamespace } from "./factories.js";
+import { createEnum, createEnumMember, createInterface, createNamespace, createProperty, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
 import { getDocument } from "./utils/request.js";
 import { extractLinks, extractText } from "./utils/selector.js";
 import { sleep } from "./utils/timing.js";
@@ -18,10 +18,11 @@ const servicePathSelector = ".devsite-nav-expandable ul.devsite-nav-section > li
 const serviceNameSelector = "h1.devsite-page-title";
 const serviceDescSelector = ".devsite-article-body p:first-of-type";
 const serviceClassRowsSelector = "#classes + .toc .member tr:not(:first-child)";
-const memberNameSelector = "td:first-child";
+const propertyNameSelector = "td:first-child";
+const propertyTypeSelector = "td:nth-child(2)";
+const propertyDescSelector = "td:nth-child(3)";
 const serviceClassDescSelector = "td:nth-child(2)";
-const enumMemberRowsSelector = ".members.property tr:not(:first-child)";
-const enumMemberDescSelector = "td:nth-child(3)";
+const propertyRowsSelector = ".members.property tr:not(:first-child)";
 
 const servicePaths = extractLinks(servicePathSelector, entryDoc);
 
@@ -62,9 +63,9 @@ for (const servicePath of servicePaths) {
 
     const serviceMemberDeclarations: Map<string, Statement> = new Map();
     serviceClassRows.forEach((row) => {
-        const name = extractText(memberNameSelector, row);
+        const name = extractText(propertyNameSelector, row);
         const desc = extractText(serviceClassDescSelector, row);
-        const [path] = extractLinks(`${memberNameSelector} a`, row);
+        const [path] = extractLinks(`${propertyNameSelector} a`, row);
         const isEnum = /^An?\s+enum/i.test(desc);
 
         const memberFactory = isEnum ? createEnum : createInterface;
@@ -77,30 +78,44 @@ for (const servicePath of servicePaths) {
     });
 
     for (const [path, node] of serviceMemberDeclarations) {
+        const serviceMemberDoc = await getDocument(DOCS_BASE, path);
+        if (!serviceMemberDoc) {
+            continue;
+        }
+
         if (ts.isEnumDeclaration(node)) {
-
-            const serviceMemberDoc = await getDocument(DOCS_BASE, path);
-
-            if (!serviceMemberDoc) continue;
-
-            const enumMemberRows = serviceMemberDoc.querySelectorAll<HTMLTableRowElement>(enumMemberRowsSelector);
+            const enumMemberRows = serviceMemberDoc.querySelectorAll<HTMLTableRowElement>(propertyRowsSelector);
 
             const enumMembers = [...enumMemberRows].map((row) => {
-                const name = extractText(memberNameSelector, row);
-                const desc = extractText(enumMemberDescSelector, row);
+                const name = extractText(propertyNameSelector, row);
+                const desc = extractText(propertyDescSelector, row);
 
                 const member = createEnumMember(factory, name);
 
                 return prependMultilineComment(member, desc);
             });
 
-            const updated = factory.updateEnumDeclaration(
-                node,
-                node.decorators,
-                node.modifiers,
-                node.name,
-                enumMembers
-            );
+            const updated = updateEnumMembers(factory, node, enumMembers);
+
+            serviceMemberDeclarations.set(path, updated);
+        }
+
+        if (ts.isInterfaceDeclaration(node)) {
+            const interfacePropertyRows = serviceMemberDoc.querySelectorAll<HTMLTableRowElement>(propertyRowsSelector);
+
+            const interfaceProperties = [...interfacePropertyRows].map((row) => {
+                const name = extractText(propertyNameSelector, row);
+                const type = extractText(propertyTypeSelector, row);
+                const desc = extractText(propertyDescSelector, row);
+
+                const member = createProperty(factory, name,
+                    factory.createTypeReferenceNode(type)
+                );
+
+                return prependMultilineComment(member, desc);
+            });
+
+            const updated = updateInterfaceMembers(factory, node, interfaceProperties);
 
             serviceMemberDeclarations.set(path, updated);
         }

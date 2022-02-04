@@ -80,6 +80,14 @@ export const string = (factory: NodeFactory) => {
 };
 
 /**
+ * @summary creates a {@link ts.VoidKeyword} type node
+ * @param factory {@link ts.NodeFactory} to use
+ */
+export const $void = (factory: NodeFactory) => {
+    return factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
+};
+
+/**
  * @summary creates a {@link ts.ModuleDeclaration}
  * @param factory {@link ts.NodeFactory} to use
  * @param name {@link ts.Identifier} of the module

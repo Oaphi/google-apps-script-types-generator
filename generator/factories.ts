@@ -2,6 +2,7 @@ import type {
     EnumMember,
     HeritageClause,
     Identifier,
+    InterfaceDeclaration,
     Modifier,
     NodeFactory,
     NodeFlags,
@@ -129,6 +130,28 @@ export const createInterface = (
         name,
         parameters,
         inherits,
+        members
+    );
+};
+
+/**
+ * @summary updates members of an {@link ts.InterfaceDeclaration}
+ * @param factory compiler factory to use
+ * @param iface interface declaration to update
+ * @param members new members of the interface
+ */
+export const updateInterfaceMembers = (
+    factory: NodeFactory,
+    iface: InterfaceDeclaration,
+    members: TypeElement[]
+) => {
+    return factory.updateInterfaceDeclaration(
+        iface,
+        iface.decorators,
+        iface.modifiers,
+        iface.name,
+        iface.typeParameters,
+        iface.heritageClauses,
         members
     );
 };

@@ -1,25 +1,31 @@
 import type {
+    HeritageClause,
     Identifier,
     Modifier,
     NodeFactory,
     NodeFlags,
-    Statement
+    Statement,
+    TypeElement,
+    TypeParameterDeclaration
 } from "typescript";
 import ts from "typescript";
 
 
 export type CommonDeclarationOptions = {
     exported?: boolean;
+    isAmbient?: boolean;
 };
 
 export type ModuleDeclarationOptions = CommonDeclarationOptions & {
-    isAmbient?: boolean;
     isNamespace?: boolean;
     isGlobal?: boolean;
 };
 
-export type NamespaceOptions = CommonDeclarationOptions & {
-    isAmbient?: boolean;
+export type NamespaceOptions = CommonDeclarationOptions & {};
+
+export type InterfaceOptions = CommonDeclarationOptions & {
+    inherits?: HeritageClause[];
+    parameters?: TypeParameterDeclaration[];
 };
 
 /**
@@ -83,4 +89,37 @@ export const createNamespace = (
         isAmbient,
         isNamespace: true,
     });
+};
+
+/**
+ * @summary creates an InterfaceDeclaration
+ * @param factory compiler factory to use
+ * @param name identifier to create the interface with
+ * @param members list of interface members to add
+ */
+export const createInterface = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    members: TypeElement[],
+    {
+        exported = false,
+        isAmbient = false,
+        inherits = [],
+        parameters = [],
+    }: InterfaceOptions = {}
+) => {
+    const modifiers: Modifier[] = [];
+    if (exported)
+        modifiers.push(factory.createModifier(ts.SyntaxKind.ExportKeyword));
+    if (isAmbient)
+        modifiers.push(factory.createModifier(ts.SyntaxKind.DeclareKeyword));
+
+    return factory.createInterfaceDeclaration(
+        undefined,
+        modifiers,
+        name,
+        parameters,
+        inherits,
+        members
+    );
 };

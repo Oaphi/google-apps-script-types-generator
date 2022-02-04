@@ -82,6 +82,12 @@ for (const servicePath of servicePaths) {
         serviceMemberDeclarations.set(path, declaration);
     });
 
+    const typeNormalizationMap: Map<string, string> = new Map();
+    typeNormalizationMap.set("Integer", "number");
+    typeNormalizationMap.set("String", "string");
+    typeNormalizationMap.set("Boolean", "boolean");
+    typeNormalizationMap.set("Object", "object");
+
     for (const [path, node] of serviceMemberDeclarations) {
         const serviceMemberDoc = await getDocument(DOCS_BASE, path);
         if (!serviceMemberDoc) {

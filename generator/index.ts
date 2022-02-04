@@ -64,6 +64,8 @@ for (const servicePath of servicePaths) {
 
     const serviceName = serviceNameText.replace(/\s+Service$/i, "");
 
+    console.log(`Generating types for the ${serviceName} Service`);
+
     const serviceClassRows = serviceDoc.querySelectorAll<HTMLTableRowElement>(serviceClassRowsSelector);
 
     const serviceMemberDeclarations: Map<string, Statement> = new Map();

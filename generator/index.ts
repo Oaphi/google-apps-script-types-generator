@@ -1,6 +1,6 @@
 import type { Statement } from "typescript";
 import { prependMultilineComment } from "./decorators.js";
-import { createArray, createEnum, createEnumMember, createIndexSignature, createInterface, createMethod, createNamespace, createParameter, createProperty, createTypeQuery, string, unknown, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
+import { $void, createArray, createEnum, createEnumMember, createIndexSignature, createInterface, createMethod, createNamespace, createParameter, createProperty, createTypeQuery, string, unknown, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
 import { isArrayParamDoc, isObjectParamDoc } from "./utils/guard.js";
 import { getDocument } from "./utils/request.js";
 import { extractLinks, extractText } from "./utils/selector.js";
@@ -158,13 +158,14 @@ for (const servicePath of servicePaths) {
 
                 const unboxedReturnType = returnType.replace("[]", "");
                 const normalizedReturnType = typeNormalizationMap.get(unboxedReturnType) || unboxedReturnType;
+                const returnTypeTypeNode = normalizedReturnType ?
+                    factory.createTypeReferenceNode(normalizedReturnType) :
+                    $void(factory);
 
                 const member = createMethod(
                     factory,
                     name,
-                    isArrayParamDoc(returnType) ?
-                        createArray(factory, factory.createTypeReferenceNode(normalizedReturnType))
-                        : factory.createTypeReferenceNode(normalizedReturnType),
+                    isArrayParamDoc(returnType) ? createArray(factory, returnTypeTypeNode) : returnTypeTypeNode,
                     { parameters }
                 );
 

@@ -52,6 +52,18 @@ export type InterfaceMethodOptions = InterfaceMemberOptions & {
 export type EnumOptions = CommonDeclarationOptions & {};
 
 /**
+ * @summary creates an {@link ts.ArrayTypeNode}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param type type of elements
+ */
+export const createArray = (
+    factory: NodeFactory,
+    type: TypeNode
+) => {
+    return factory.createArrayTypeNode(type);
+};
+
+/**
  * @summary creates a module declaration
  * @param factory compiler factory to use
  * @param name identifier to create the module with

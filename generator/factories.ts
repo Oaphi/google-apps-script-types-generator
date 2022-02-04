@@ -1,4 +1,5 @@
 import type {
+    EnumMember,
     HeritageClause,
     Identifier,
     Modifier,
@@ -27,6 +28,8 @@ export type InterfaceOptions = CommonDeclarationOptions & {
     inherits?: HeritageClause[];
     parameters?: TypeParameterDeclaration[];
 };
+
+export type EnumOptions = CommonDeclarationOptions & {};
 
 /**
  * @summary creates a module declaration
@@ -96,6 +99,7 @@ export const createNamespace = (
  * @param factory compiler factory to use
  * @param name identifier to create the interface with
  * @param members list of interface members to add
+ * @param options factory configuration
  */
 export const createInterface = (
     factory: NodeFactory,
@@ -120,6 +124,35 @@ export const createInterface = (
         name,
         parameters,
         inherits,
+        members
+    );
+};
+
+/**
+ * @summary creates a EnumDeclaration
+ * @param factory compiler factory to use
+ * @param name identifier to create the enum with
+ * @param members list of enum members to add
+ * @param options factory configuration
+ */
+export const createEnum = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    members: EnumMember[],
+    {
+        exported = false,
+        isAmbient = false,
+    }: EnumOptions = {}) => {
+    const modifiers: Modifier[] = [];
+    if (exported)
+        modifiers.push(factory.createModifier(ts.SyntaxKind.ExportKeyword));
+    if (isAmbient)
+        modifiers.push(factory.createModifier(ts.SyntaxKind.DeclareKeyword));
+
+    return factory.createEnumDeclaration(
+        undefined,
+        modifiers,
+        name,
         members
     );
 };

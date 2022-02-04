@@ -64,6 +64,22 @@ export const createArray = (
 };
 
 /**
+ * @summary creates an {@link ts.UnknownKeyword} type node
+ * @param factory {@link ts.NodeFactory} to use
+ */
+export const unknown = (factory: NodeFactory) => {
+    return factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword);
+};
+
+/**
+ * @summary creates a {@link ts.StringKeyword} type node
+ * @param factory {@link ts.NodeFactory} to use
+ */
+export const string = (factory: NodeFactory) => {
+    return factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword);
+};
+
+/**
  * @summary creates a {@link ts.ModuleDeclaration}
  * @param factory {@link ts.NodeFactory} to use
  * @param name {@link ts.Identifier} of the module

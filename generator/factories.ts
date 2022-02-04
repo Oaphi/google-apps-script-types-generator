@@ -230,8 +230,9 @@ export const updateEnumMembers = (
 };
 
 /**
- * @param factory compiler factory to use
- * @param name identifier to create the enum member with
+ * @summary creates a {@link ts.EnumMember}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param name {@link ts.Identifier} of the member
  * @param initializer optional member initializer
  */
 export const createEnumMember = (

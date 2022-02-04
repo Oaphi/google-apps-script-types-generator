@@ -7,6 +7,7 @@ import type {
     NodeFlags,
     Statement,
     TypeElement,
+    TypeNode,
     TypeParameterDeclaration
 } from "typescript";
 import ts from "typescript";
@@ -28,6 +29,10 @@ export type InterfaceOptions = CommonDeclarationOptions & {
     inherits?: HeritageClause[];
     parameters?: TypeParameterDeclaration[];
 };
+
+export type InterfaceMemberOptions = {
+    optional?: boolean;
+}
 
 export type EnumOptions = CommonDeclarationOptions & {};
 
@@ -125,6 +130,29 @@ export const createInterface = (
         parameters,
         inherits,
         members
+    );
+};
+
+/**
+ * @summary creates a {@link ts.PropertySignature}
+ * @param factory compiler factory to use
+ * @param name identifier to create the member with
+ * @param type member type
+ * @param options factory configuration
+ */
+export const createProperty = (
+    factory: NodeFactory,
+    name: string | Identifier,
+    type: TypeNode,
+    {
+        optional = false
+    }: InterfaceMemberOptions = {}
+) => {
+    return factory.createPropertySignature(
+        undefined,
+        name,
+        optional ? factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
+        type
     );
 };
 

@@ -5,7 +5,10 @@ import type {
     HeritageClause,
     Identifier,
     InterfaceDeclaration,
+    JSDocTag,
+    MethodSignature,
     Modifier,
+    NodeArray,
     NodeFactory,
     NodeFlags,
     ParameterDeclaration,
@@ -396,5 +399,106 @@ export const createIndexSignature = (
         undefined,
         [parameter],
         signatureType
+    );
+};
+
+type SignatureJSDocOptions = {
+    typed?: boolean;
+    paramComments?: Array<string | undefined>;
+    returnComment?: string;
+    summary?: string;
+    example?: string;
+};
+
+/**
+ * @summary creates a JSDoc tag with a given name
+ * @param name name of the tag
+ * @param comment optional comment
+ */
+export const createJSDocTag = (
+    factory: NodeFactory,
+    name: string,
+    comment?: string | NodeArray<ts.JSDocComment>
+) => {
+    return factory.createJSDocUnknownTag(
+        factory.createIdentifier(name), comment
+    );
+};
+
+/**
+ * @summary creates a JSDoc comment for a function
+ * @param factory {@link ts.NodeFactory} to use
+ * @param params an array of {@link ts.ParameterDeclaration}s
+ * @param returns return type of the function
+ * @param options factory configuration
+ */
+export const createFunctionJSDoc = (
+    factory: NodeFactory,
+    params: Array<ParameterDeclaration> | NodeArray<ParameterDeclaration>,
+    returns: TypeNode,
+    {
+        typed = false,
+        paramComments = [],
+        returnComment,
+        summary,
+        example
+    }: SignatureJSDocOptions = {}
+) => {
+    const tags: JSDocTag[] = [
+        ...params.map((param, posParamIndex) => {
+            const { questionToken, type, name } = param;
+
+            return factory.createJSDocParameterTag(
+                undefined,
+                ts.isIdentifier(name) ? name : factory.createIdentifier(`arg${posParamIndex + 1}`),
+                !!questionToken,
+                typed && type ? factory.createJSDocTypeExpression(type) : undefined,
+                true,
+                paramComments[posParamIndex]
+            );
+        }),
+
+        factory.createJSDocReturnTag(
+            undefined,
+            factory.createJSDocTypeExpression(returns),
+            returnComment
+        )
+    ];
+
+    if (example) {
+        tags.unshift(createJSDocTag(factory, "example", `\n\`\`\`\n${example}\n\`\`\`\n`));
+    }
+
+    if (summary) {
+        tags.unshift(createJSDocTag(factory, "summary", summary));
+    }
+
+    return factory.createJSDocComment(
+        undefined,
+        tags
+    );
+};
+
+/**
+ * @summary creates a {@link ts.JSDoc} from a {@link ts.MethodSignature}
+ * @param factory {@link ts.NodeFactory} to use
+ * @param signature {@link ts.MethodSignature} to create JSDoc for
+ * @param options factory configuration
+ */
+export const createMethodSignatureJSDoc = (
+    factory: NodeFactory,
+    signature: MethodSignature,
+    options: SignatureJSDocOptions = {}
+) => {
+    const {
+        parameters,
+        type
+    } = signature;
+
+    return createFunctionJSDoc(
+        factory,
+        parameters,
+        type || $void(factory),
+        options
     );
 };

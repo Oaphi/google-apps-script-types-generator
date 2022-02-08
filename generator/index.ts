@@ -22,13 +22,13 @@ const serviceDescSelector = ".devsite-article-body p:first-of-type";
 const serviceClassRowsSelector = "#classes + .toc .member tr:not(:first-child)";
 const memberNameSelector = "td:first-child";
 const memberTypeSelector = "td:nth-child(2)";
-const propertyDescSelector = "td:nth-child(3)";
+const memberDescSelector = "td:nth-child(3)";
 const serviceClassDescSelector = "td:nth-child(2)";
 const propertyRowsSelector = ".members.property tr:not(:first-child)";
 const methodDetailsWrapperSelector = ".function.doc";
 const methodNameSelector = "h3";
 const methodParamRowsSelector = ".function.param tr:not(:first-child)";
-const methodReturnTypeSelector = "[id*='return'] + p a,[id*='return'] + p code:first-of-type";
+const methodReturnTypeSelector = "[id*='return'] + p";
 const methodSummarySelector = "div > p";
 const methodExampleSelector = "div > pre";
 
@@ -104,7 +104,7 @@ for (const servicePath of servicePaths) {
 
             const enumMembers = [...enumMemberRows].map((row) => {
                 const name = extractText(memberNameSelector, row);
-                const desc = extractText(propertyDescSelector, row);
+                const desc = extractText(memberDescSelector, row);
 
                 const member = createEnumMember(factory, name);
 
@@ -122,7 +122,7 @@ for (const servicePath of servicePaths) {
             const interfaceProperties = [...interfacePropertyRows].map((row) => {
                 const name = extractText(memberNameSelector, row);
                 const type = extractText(memberTypeSelector, row);
-                const desc = extractText(propertyDescSelector, row);
+                const desc = extractText(memberDescSelector, row);
                 const isEnum = /^An?\s+enum/i.test(desc);
 
                 const member = createProperty(factory, name,
@@ -138,17 +138,22 @@ for (const servicePath of servicePaths) {
 
             const interfaceMethods = [...interfaceMethodDetails].map((detail) => {
                 const [name] = extractText(methodNameSelector, detail).split("(");
-                const returnType = extractText(methodReturnTypeSelector, detail);
+                const [returnType, returnComment] = extractText(methodReturnTypeSelector, detail).split(/\s+[—-]\s+/);
                 const summary = extractText(methodSummarySelector, detail);
                 const example = extractText(methodExampleSelector, detail);
 
                 const methodParamRows = detail.querySelectorAll<HTMLTableRowElement>(methodParamRowsSelector);
 
+                const paramComments: string[] = [];
+
                 const parameters = [...methodParamRows].map((row) => {
                     const name = extractText(memberNameSelector, row);
                     const type = extractText(memberTypeSelector, row);
-                    const unboxedType = type.replace("[]", "");
+                    const desc = extractText(memberDescSelector, row);
 
+                    paramComments.push(desc);
+
+                    const unboxedType = type.replace("[]", "");
                     const normalizedType = typeNormalizationMap.get(unboxedType) || unboxedType;
 
                     return createParameter(
@@ -178,7 +183,9 @@ for (const servicePath of servicePaths) {
 
                 const { tags } = createMethodSignatureJSDoc(factory, member, {
                     summary,
-                    example
+                    example,
+                    paramComments,
+                    returnComment,
                 });
 
                 const jsDocCommentText = tags && printer.printList(ts.ListFormat.MultiLine, tags, sourceFile);

@@ -29,6 +29,8 @@ const methodDetailsWrapperSelector = ".function.doc";
 const methodNameSelector = "h3";
 const methodParamRowsSelector = ".function.param tr:not(:first-child)";
 const methodReturnTypeSelector = "[id*='return'] + p a,[id*='return'] + p code:first-of-type";
+const methodSummarySelector = "div > p";
+const methodExampleSelector = "div > pre";
 
 const servicePaths = extractLinks(servicePathSelector, entryDoc);
 
@@ -137,6 +139,8 @@ for (const servicePath of servicePaths) {
             const interfaceMethods = [...interfaceMethodDetails].map((detail) => {
                 const [name] = extractText(methodNameSelector, detail).split("(");
                 const returnType = extractText(methodReturnTypeSelector, detail);
+                const summary = extractText(methodSummarySelector, detail);
+                const example = extractText(methodExampleSelector, detail);
 
                 const methodParamRows = detail.querySelectorAll<HTMLTableRowElement>(methodParamRowsSelector);
 
@@ -172,9 +176,18 @@ for (const servicePath of servicePaths) {
                     { parameters }
                 );
 
-                // const leadingTrivia = sample ? `${desc}\n${sample}` : desc;
-                // return prependMultilineComment(member, leadingTrivia);
-                return member;
+                const { tags } = createMethodSignatureJSDoc(factory, member, {
+                    summary,
+                    example
+                });
+
+                const jsDocCommentText = tags && printer.printList(ts.ListFormat.MultiLine, tags, sourceFile);
+
+                if (!jsDocCommentText) {
+                    return member;
+                }
+
+                return prependMultilineComment(member, jsDocCommentText);
             });
 
             const updated = updateInterfaceMembers(factory, node, [

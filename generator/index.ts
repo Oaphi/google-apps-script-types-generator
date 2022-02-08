@@ -1,7 +1,8 @@
 import type { Statement } from "typescript";
 import { prependMultilineComment } from "./decorators.js";
-import { $void, createArray, createEnum, createEnumMember, createIndexSignature, createInterface, createMethod, createNamespace, createParameter, createProperty, createTypeQuery, string, unknown, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
+import { $void, createArray, createEnum, createEnumMember, createIndexSignature, createInterface, createMethod, createMethodSignatureJSDoc, createNamespace, createParameter, createProperty, createTypeQuery, string, unknown, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
 import { isArrayParamDoc, isObjectParamDoc } from "./utils/guard.js";
+import { printNodesToFile } from "./utils/printer.js";
 import { getDocument } from "./utils/request.js";
 import { extractLinks, extractText } from "./utils/selector.js";
 import { sleep } from "./utils/timing.js";
@@ -42,7 +43,7 @@ const { default: ts } = await import("typescript");
 
 const { factory, createPrinter, createSourceFile } = ts;
 
-const nodePrinter = createPrinter({ newLine: ts.NewLineKind.LineFeed });
+const printer = createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
 const sourceFile = createSourceFile(
     "types",
@@ -205,9 +206,7 @@ for (const servicePath of servicePaths) {
         { isAmbient: true }
     );
 
-    const node = nodePrinter.printNode(ts.EmitHint.Unspecified, appsScriptNSdeclaration, sourceFile);
-
-    console.log(node);
+    await printNodesToFile(ts, [appsScriptNSdeclaration], "./index.d.ts");
 
     // apply slight throttle to avoid hammering the pages
     await sleep(1);

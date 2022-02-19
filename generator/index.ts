@@ -1,4 +1,4 @@
-import type { Statement } from "typescript";
+import type { InterfaceDeclaration, Statement } from "typescript";
 import { prependMultilineComment } from "./decorators.js";
 import { $void, createArray, createEnum, createEnumMember, createIndexSignature, createInterface, createMethod, createMethodSignatureJSDoc, createNamespace, createParameter, createProperty, createTypeQuery, string, unknown, updateEnumMembers, updateInterfaceMembers } from "./factories.js";
 import { isArrayParamDoc, isObjectParamDoc } from "./utils/guard.js";
@@ -6,6 +6,7 @@ import { printNodesToFile } from "./utils/printer.js";
 import { getDocument } from "./utils/request.js";
 import { extractLinks, extractText } from "./utils/selector.js";
 import { sleep } from "./utils/timing.js";
+import { capitalize, unbox } from "./utils/types.js";
 
 const DOCS_BASE = "https://developers.google.com";
 const DOCS_PATH = "/apps-script/reference";
@@ -28,6 +29,7 @@ const propertyRowsSelector = ".members.property tr:not(:first-child)";
 const methodDetailsWrapperSelector = ".function.doc";
 const methodNameSelector = "h3";
 const methodParamRowsSelector = ".function.param tr:not(:first-child)";
+const methodAdvParamRowsSelector = ".function.advancedparam tr:not(:first-child)";
 const methodReturnTypeSelector = "[id*='return'] + p";
 const methodSummarySelector = "div > p";
 const methodExampleSelector = "div > pre";
@@ -87,6 +89,8 @@ for (const servicePath of servicePaths) {
         serviceMemberDeclarations.set(path, declaration);
     });
 
+    const serviceAdvParamInterfaces: InterfaceDeclaration[] = [];
+
     const typeNormalizationMap: Map<string, string> = new Map();
     typeNormalizationMap.set("Integer", "number");
     typeNormalizationMap.set("String", "string");
@@ -137,31 +141,73 @@ for (const servicePath of servicePaths) {
             const interfaceMethodDetails = serviceMemberDoc.querySelectorAll<HTMLTableRowElement>(methodDetailsWrapperSelector);
 
             const interfaceMethods = [...interfaceMethodDetails].map((detail) => {
-                const [name] = extractText(methodNameSelector, detail).split("(");
+                const [intefaceName] = extractText(methodNameSelector, detail).split("(");
                 const [returnType, returnComment] = extractText(methodReturnTypeSelector, detail).split(/\s+[—-]\s+/);
                 const summary = extractText(methodSummarySelector, detail);
                 const example = extractText(methodExampleSelector, detail);
 
                 const methodParamRows = detail.querySelectorAll<HTMLTableRowElement>(methodParamRowsSelector);
+                const methodAdvParamRows = detail.querySelectorAll<HTMLTableRowElement>(methodAdvParamRowsSelector);
 
                 const paramComments: string[] = [];
 
                 const parameters = [...methodParamRows].map((row) => {
-                    const name = extractText(memberNameSelector, row);
-                    const type = extractText(memberTypeSelector, row);
-                    const desc = extractText(memberDescSelector, row);
+                    const paramName = extractText(memberNameSelector, row);
+                    const paramType = extractText(memberTypeSelector, row);
+                    const paramDesc = extractText(memberDescSelector, row);
 
-                    paramComments.push(desc);
+                    paramComments.push(paramDesc);
 
-                    const unboxedType = type.replace("[]", "");
+                    const unboxedType = unbox(paramType);
                     const normalizedType = typeNormalizationMap.get(unboxedType) || unboxedType;
+
+                    if (isObjectParamDoc(paramType) && paramDesc.includes("advanced parameters")) {
+                        const advProperties = [...methodAdvParamRows].map((row) => {
+                            const advName = extractText(memberNameSelector, row);
+                            const advType = extractText(memberTypeSelector, row);
+                            const advDesc = extractText(memberDescSelector, row);
+                            const isEnum = /^An?\s+enum/i.test(advDesc);
+                            const isArr = isArrayParamDoc(advName);
+
+                            const unboxedType = unbox(advType);
+                            const normalizedType = typeNormalizationMap.get(unboxedType) || unboxedType;
+
+                            const member = createProperty(
+                                factory,
+                                isArr ? unbox(advName) : advName,
+                                isArrayParamDoc(paramType) ?
+                                    createArray(factory, factory.createTypeReferenceNode(normalizedType))
+                                    : isEnum ?
+                                        createTypeQuery(factory, normalizedType) :
+                                        factory.createTypeReferenceNode(normalizedType)
+                            );
+
+                            return prependMultilineComment(member, advDesc);
+                        });
+
+                        const advParamName = `${capitalize(intefaceName)}Options`;
+
+                        const advInterface = createInterface(
+                            factory,
+                            advParamName,
+                            advProperties
+                        );
+
+                        serviceAdvParamInterfaces.push(advInterface);
+
+                        return createParameter(
+                            factory,
+                            paramName,
+                            factory.createTypeReferenceNode(advParamName)
+                        );
+                    }
 
                     return createParameter(
                         factory,
-                        name,
-                        isArrayParamDoc(type) ?
+                        paramName,
+                        isArrayParamDoc(paramType) ?
                             createArray(factory, factory.createTypeReferenceNode(normalizedType))
-                            : isObjectParamDoc(type) ?
+                            : isObjectParamDoc(paramType) ?
                                 createIndexSignature(factory, "key", string(factory), unknown(factory)) :
                                 factory.createTypeReferenceNode(normalizedType),
                         {} // TODO: optional, default, and rest
@@ -176,7 +222,7 @@ for (const servicePath of servicePaths) {
 
                 const member = createMethod(
                     factory,
-                    name,
+                    intefaceName,
                     isArrayParamDoc(returnType) ? createArray(factory, returnTypeTypeNode) : returnTypeTypeNode,
                     { parameters }
                 );
@@ -211,7 +257,10 @@ for (const servicePath of servicePaths) {
     const serviceNSdeclaration = createNamespace(
         factory,
         serviceName,
-        [...serviceMemberDeclarations.values()]
+        [
+            ...serviceMemberDeclarations.values(),
+            ...serviceAdvParamInterfaces
+        ]
     );
 
     // add service description as a leading multiline JSDoc comment

@@ -89,7 +89,7 @@ for (const servicePath of servicePaths) {
         serviceMemberDeclarations.set(path, declaration);
     });
 
-    const serviceAdvParamInterfaces: InterfaceDeclaration[] = [];
+    const serviceAdvParamInterfaces: Map<string, InterfaceDeclaration> = new Map();
 
     const typeNormalizationMap: Map<string, string> = new Map();
     typeNormalizationMap.set("Integer", "number");
@@ -193,7 +193,7 @@ for (const servicePath of servicePaths) {
                             advProperties
                         );
 
-                        serviceAdvParamInterfaces.push(advInterface);
+                        serviceAdvParamInterfaces.set(advParamName, advInterface);
 
                         return createParameter(
                             factory,
@@ -259,7 +259,7 @@ for (const servicePath of servicePaths) {
         serviceName,
         [
             ...serviceMemberDeclarations.values(),
-            ...serviceAdvParamInterfaces
+            ...serviceAdvParamInterfaces.values()
         ]
     );
 
